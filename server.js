@@ -76,6 +76,12 @@ function onHealthCheck ({ state }) {
   }
 }
 
+function isReadyCheck ({ state }) {
+  return new Promise(resolve => {
+    resolve()
+  })
+}
+
 function onSignal () {
   console.log('server is starting cleanup')
 
@@ -89,15 +95,25 @@ function onSignal () {
   })
 }
 
+function beforeShutdown () {
+  // Avoid race conditions with readiness probes
+  return new Promise(resolve => {
+    setTimeout(resolve, 5000)
+  })
+}
+
 async function startServer () {
   createTerminus(http.createServer(app), {
     logger: console.log,
     signal: 'SIGINT',
     healthChecks: {
       '/healthz': onHealthCheck,
+      '/readyz': isReadyCheck,
     },
 
-    onSignal
+    onSignal,
+    beforeShutdown,
+    useExit0: true
   }).listen(PORT || 8080)
 }
 
