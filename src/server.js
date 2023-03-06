@@ -9,6 +9,8 @@
 
 // Standard library dependencies
 const http = require('http');
+var path = require('path');
+var os = require("os");
 
 // Third-party dependencies
 require("dotenv").config({ path: ".env" });
@@ -18,6 +20,11 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const { createTerminus } = require('@godaddy/terminus');
 const { Sequelize } = require('sequelize');
+const serveStatic = require('serve-static')
+
+// Internal dependencies
+const morganMiddleware = require("./middlewares/morgan.middleware");
+const logger = require("./utils/logger");
 
 const dbConnection = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
   dialect: 'mysql',
@@ -40,6 +47,21 @@ app.use(
   })
 );
 app.use(bodyParser.json());
+app.use(morganMiddleware);
+
+app.use(serveStatic(path.join(__dirname, 'public'), { index: ['index.html'] }));
+
+app.get("/api/info", (req, res) => {
+  res.status(200).send({
+    hostname: os.hostname(),
+    version: "0.1.0",
+    color: process.env.UI_COLOR,
+    logo: process.env.UI_LOGO,
+    runtime: process.version,
+    revision: "unknown",
+    message: process.env.UI_MESSAGE,
+  });
+});
 
 // Configure API documentation
 const apiDocOpts = {
@@ -68,10 +90,10 @@ app.use(
 function onHealthCheck ({ state }) {
   try {
     dbConnection.authenticate();
-    console.log('DB Connected');
+    logger.info('DB Connected');
     return Promise.resolve()
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
+    logger.error("Unable to connect to the database:", error);
     return Promise.reject(new Error('Sequelize has disconnected.'));
   }
 }
@@ -83,12 +105,12 @@ function isReadyCheck ({ state }) {
 }
 
 function onSignal () {
-  console.log('server is starting cleanup')
+  logger.info('server is starting cleanup')
 
   return new Promise((resolve, reject) => {
     dbConnection.connectionManager.close()
       .then(() => {
-        console.info('Sequelize has disconnected.')
+        logger.info('Sequelize has disconnected.')
         resolve()
       })
       .catch(reject)
@@ -104,7 +126,7 @@ function beforeShutdown () {
 
 async function startServer () {
   createTerminus(http.createServer(app), {
-    logger: console.log,
+    logger: logger,
     signal: 'SIGINT',
     healthChecks: {
       '/healthz': onHealthCheck,
@@ -118,4 +140,4 @@ async function startServer () {
 }
 
 startServer()
-  .catch(err => console.error('Connection error', err.stack))
+  .catch(err => logger.error('Connection error', err.stack))

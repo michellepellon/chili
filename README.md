@@ -7,12 +7,14 @@ practices of running microservices in Kubernetes.
 
 - Health checks (readiness and liveness)
 - Graceful shutdown on interrupt signals
+- Structured logging with Winston and Morgan
 - Swagger docs
 
 ### API
 
 - `GET /` prints runtime information
 - `GET /healthz` used by Kubernetes liveness probe
+- `GET /readyz` used by Kubernetes readiness probe
 
 ## Install
 
