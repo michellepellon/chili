@@ -63,6 +63,11 @@ app.get("/api/info", (req, res) => {
   });
 });
 
+// Crashes the process with exit code 255
+app.get("/panic", (req, res) => {
+  process.exit(255);
+});
+
 // Configure API documentation
 const apiDocOpts = {
   definition: {

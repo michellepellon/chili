@@ -15,6 +15,7 @@ practices of running microservices in Kubernetes.
 - `GET /` prints runtime information
 - `GET /healthz` used by Kubernetes liveness probe
 - `GET /readyz` used by Kubernetes readiness probe
+- `GET /panic` crashes the process with exit code 255
 
 ## Install
 
